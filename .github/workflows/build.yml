@@ -12,9 +12,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
-        with:
-          version: "0.16.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -43,10 +40,23 @@ jobs:
       - uses: actions/checkout@v4
       # The native CLI's own Zig auto-downloader only knows about macOS
       # and Linux (see @native-sdk/cli's toolchain.zig) — Windows has no
-      # managed-download mapping at all, so Zig must be on PATH already.
-      - uses: mlugg/setup-zig@v1
-        with:
-          version: "0.16.0"
+      # managed-download mapping at all, so install it directly from the
+      # same official index native's own downloader trusts, verifying
+      # the checksum ourselves rather than pinning one by hand.
+      - name: Install Zig 0.16.0
+        shell: pwsh
+        run: |
+          $index = Invoke-RestMethod -Uri "https://ziglang.org/download/index.json"
+          $entry = $index."0.16.0"."x86_64-windows"
+          Invoke-WebRequest -Uri $entry.tarball -OutFile zig.zip
+          $actual = (Get-FileHash -Algorithm SHA256 zig.zip).Hash.ToLower()
+          if ($actual -ne $entry.shasum) {
+            Write-Error "zig archive checksum mismatch: expected $($entry.shasum), got $actual"
+            exit 1
+          }
+          Expand-Archive -Path zig.zip -DestinationPath "$env:USERPROFILE\zig"
+          $zigDir = Get-ChildItem "$env:USERPROFILE\zig" -Directory | Select-Object -First 1
+          Add-Content -Path $env:GITHUB_PATH -Value $zigDir.FullName
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -71,9 +81,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
-        with:
-          version: "0.16.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
