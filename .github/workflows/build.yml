@@ -18,7 +18,9 @@ jobs:
       - name: Install native CLI
         run: npm install -g @native-sdk/cli
       - name: Build
-        run: native build --yes
+        run: |
+          node scripts/link-native-sdk.js
+          native build --yes
       - name: Test
         run: native test --yes
       - name: Package (.app, ad-hoc signed)
@@ -46,7 +48,9 @@ jobs:
       # package itself (seen once during local dev), not this repo's code —
       # try a different @native-sdk/cli version.
       - name: Build
-        run: native build --yes
+        run: |
+          node scripts/link-native-sdk.js
+          native build --yes
       - name: Test
         run: native test --yes
       - uses: actions/upload-artifact@v4
@@ -72,7 +76,9 @@ jobs:
       - name: Install native CLI
         run: npm install -g @native-sdk/cli
       - name: Build
-        run: native build --yes
+        run: |
+          node scripts/link-native-sdk.js
+          native build --yes
       - name: Test
         run: native test --yes
       - uses: actions/upload-artifact@v4

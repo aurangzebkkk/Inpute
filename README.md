@@ -40,8 +40,15 @@ output.
    ```sh
    git clone <this repo's URL>
    cd Inpute
+   node scripts/link-native-sdk.js
    native build
    ```
+   The `link-native-sdk.js` step is required on **every fresh clone**,
+   on every machine: `native eject` bakes a path into `build.zig.zon`
+   pointing at wherever `npm` installed the CLI on the machine that ran
+   it, which is never correct on a different computer. This script
+   recomputes it for whatever machine you're on. If you ever see `no
+   module named 'native_sdk' available`, re-run this script.
 3. Package it into a real `.app` (this repo isn't set up with a paid
    Apple Developer signing identity, so this uses ad-hoc signing —
    fine for internal use):
@@ -82,8 +89,15 @@ Developer ID certificate so permissions persist across updates.
    ```sh
    git clone <this repo's URL>
    cd Inpute
+   node scripts/link-native-sdk.js
    native build
    ```
+   The `link-native-sdk.js` step is required on **every fresh clone**,
+   on every machine: `native eject` bakes a path into `build.zig.zon`
+   pointing at wherever `npm` installed the CLI on the machine that ran
+   it, which is never correct on a different computer. This script
+   recomputes it for whatever machine you're on. If you ever see `no
+   module named 'native_sdk' available`, re-run this script.
    This produces `zig-out\bin\inpute.exe`.
 3. **First launch**: since the binary isn't code-signed, Windows
    SmartScreen will show "Windows protected your PC" the first time you
@@ -117,8 +131,15 @@ Developer ID certificate so permissions persist across updates.
    ```sh
    git clone <this repo's URL>
    cd Inpute
+   node scripts/link-native-sdk.js
    native build
    ```
+   The `link-native-sdk.js` step is required on **every fresh clone**,
+   on every machine: `native eject` bakes a path into `build.zig.zon`
+   pointing at wherever `npm` installed the CLI on the machine that ran
+   it, which is never correct on a different computer. This script
+   recomputes it for whatever machine you're on. If you ever see `no
+   module named 'native_sdk' available`, re-run this script.
    This produces `zig-out/bin/inpute`.
 4. Just run it: `./zig-out/bin/inpute`.
 5. **Input capture backend**: Inpute picks automatically based on your
@@ -155,6 +176,9 @@ Deleting that folder wipes all history. Nothing is ever sent anywhere.
 ---
 
 ## Development
+
+Run `node scripts/link-native-sdk.js` once after cloning (see above) —
+every command below assumes it's already been run.
 
 ```sh
 native dev     # build and run with hot reload (edits to src/app.native apply live)
