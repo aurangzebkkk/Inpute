@@ -1,0 +1,81 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install native CLI
+        run: npm install -g @native-sdk/cli
+      - name: Build
+        run: native build
+      - name: Test
+        run: native test
+      - name: Package (.app, ad-hoc signed)
+        run: native package --target macos --signing adhoc
+      - name: Zip app bundle
+        run: |
+          cd zig-out/package
+          ditto -c -k --sequesterRsrc --keepParent inpute.app inpute-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inpute-macos
+          path: zig-out/package/inpute-macos.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install native CLI
+        run: npm install -g @native-sdk/cli
+      # NOTE: if this fails with "failed to check cache ... native-sdk.manifest
+      # file_hash FileNotFound", that's a missing asset in the installed CLI
+      # package itself (seen once during local dev), not this repo's code —
+      # try a different @native-sdk/cli version.
+      - name: Build
+        run: native build
+      - name: Test
+        run: native test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inpute-windows
+          path: zig-out/bin/inpute.exe
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # NOTE: libwebkitgtk-6.0-dev is fairly new; if this step fails with
+      # "unable to locate package", ubuntu-latest's default repos don't
+      # have it yet and this needs a PPA or a newer runner image — this
+      # is the first thing to check if this job breaks.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libwebkitgtk-6.0-dev libx11-dev libxtst-dev
+      - name: Install native CLI
+        run: npm install -g @native-sdk/cli
+      - name: Build
+        run: native build
+      - name: Test
+        run: native test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inpute-linux
+          path: zig-out/bin/inpute

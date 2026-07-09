@@ -1,0 +1,8 @@
+<!-- Main screen: today's live stats plus Show Calendar / Minimize. -->
+<column padding="16" gap="16" main="center" cross="center" grow="1">
+  <text size="heading">Keys {keystrokes} · Clicks {clicks}</text>
+  <row gap="8">
+    <button variant="primary" on-press="open_calendar">Show Calendar</button>
+    <button variant="secondary" on-press="minimize_window">Minimize</button>
+  </row>
+</column>
