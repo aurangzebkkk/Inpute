@@ -18,9 +18,9 @@ jobs:
       - name: Install native CLI
         run: npm install -g @native-sdk/cli
       - name: Build
-        run: native build
+        run: native build --yes
       - name: Test
-        run: native test
+        run: native test --yes
       - name: Package (.app, ad-hoc signed)
         run: native package --target macos --signing adhoc
       - name: Zip app bundle
@@ -46,9 +46,9 @@ jobs:
       # package itself (seen once during local dev), not this repo's code —
       # try a different @native-sdk/cli version.
       - name: Build
-        run: native build
+        run: native build --yes
       - name: Test
-        run: native test
+        run: native test --yes
       - uses: actions/upload-artifact@v4
         with:
           name: inpute-windows
@@ -72,9 +72,9 @@ jobs:
       - name: Install native CLI
         run: npm install -g @native-sdk/cli
       - name: Build
-        run: native build
+        run: native build --yes
       - name: Test
-        run: native test
+        run: native test --yes
       - uses: actions/upload-artifact@v4
         with:
           name: inpute-linux
