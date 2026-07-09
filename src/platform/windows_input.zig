@@ -33,6 +33,11 @@ const MSG = extern struct {
     lParam: LPARAM,
     time: DWORD,
     pt: POINT,
+    // Real winuser.h has a trailing lPrivate field (confirmed against
+    // Microsoft Learn's MSG docs) — without it, GetMessageW writes past
+    // the end of an undersized buffer on every call. Never read; exists
+    // purely so this struct is the right size.
+    lPrivate: DWORD,
 };
 
 const KBDLLHOOKSTRUCT = extern struct {
