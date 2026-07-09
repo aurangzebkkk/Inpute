@@ -12,6 +12,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: "0.16.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -38,6 +41,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      # The native CLI's own Zig auto-downloader only knows about macOS
+      # and Linux (see @native-sdk/cli's toolchain.zig) — Windows has no
+      # managed-download mapping at all, so Zig must be on PATH already.
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: "0.16.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -62,6 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v1
+        with:
+          version: "0.16.0"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
