@@ -1,18 +1,28 @@
 #!/usr/bin/env node
-// `native eject` bakes a machine-specific relative path into
-// build.zig.zon, pointing at wherever `npm root -g` happened to resolve
-// on the machine that ran `native eject` — that path is meaningless on
-// any other machine (a colleague's laptop, CI, ...). Run this once
-// before `native build`/`native test` on a fresh checkout (or whenever
-// the error is "no module named 'native_sdk' available") to repoint the
-// dependency at THIS machine's actual global npm install.
+// `native eject` bakes a path into build.zig.zon pointing at wherever
+// `npm root -g` resolved on the machine that ran `native eject` — that
+// path is meaningless on any other machine (a colleague's laptop, CI).
+// Worse on Windows: npm's global prefix and a git checkout often sit on
+// DIFFERENT DRIVE LETTERS (e.g. npm on C:, checkout on D:), and Windows
+// relative paths cannot cross drives at all — no relative path exists
+// to write, no matter how it's computed. Tried forcing npm's prefix onto
+// the checkout's drive first; GitHub's Windows runner image pre-sets it
+// via an environment variable that overrides that, so it never actually
+// moved.
+//
+// So instead of computing a path to the global install, this VENDORS a
+// copy of it into `.native-sdk/` inside the repo (gitignored) — always
+// on the same drive as the checkout by construction, so build.zig.zon
+// can point at it with a fixed, permanent, committed relative path
+// that never needs to change. Run this once after cloning (or whenever
+// the error is "no module named 'native_sdk' available") to refresh it.
 "use strict";
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 const projectDir = path.join(__dirname, "..");
-const zonPath = path.join(projectDir, "build.zig.zon");
+const vendorDir = path.join(projectDir, ".native-sdk");
 const globalRoot = execSync("npm root -g", { encoding: "utf8" }).trim();
 const sdkPath = path.join(globalRoot, "@native-sdk", "cli");
 
@@ -24,34 +34,6 @@ if (!fs.existsSync(path.join(sdkPath, "src", "root.zig"))) {
   process.exit(1);
 }
 
-// Zig path dependencies must be relative to the build root (an absolute
-// path is a hard error), so re-derive the same relative-path shape
-// `native eject` originally wrote — just freshly computed for THIS
-// machine instead of frozen from whichever machine ran eject.
-const relativePath = path.relative(projectDir, sdkPath) || ".";
-if (path.isAbsolute(relativePath)) {
-  // Windows: path.relative() can't cross drive letters (e.g. project on
-  // D:, npm global prefix on C:) and silently returns the absolute path
-  // instead of erroring — this is exactly the bug that broke Windows CI.
-  console.error(
-    `error: ${projectDir} and ${sdkPath} are on different drives, so no ` +
-      `relative path between them exists. Put npm's global prefix on the ` +
-      `same drive as this checkout (npm config set prefix <drive>:\\npm-global) ` +
-      `and re-run "npm install -g @native-sdk/cli".`,
-  );
-  process.exit(1);
-}
-// build.zig.zon is Zig source, not JSON — escape backslashes (Windows
-// paths) and quotes so the result is a valid Zig string literal.
-const escaped = relativePath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
-const zon = fs.readFileSync(zonPath, "utf8");
-const dependencyLine = /\.native_sdk\s*=\s*\.\{\s*\.path\s*=\s*"[^"]*"\s*\}/;
-if (!dependencyLine.test(zon)) {
-  console.error("error: could not find the .native_sdk dependency line in build.zig.zon to update");
-  process.exit(1);
-}
-
-const updated = zon.replace(dependencyLine, `.native_sdk = .{ .path = "${escaped}" }`);
-if (updated !== zon) fs.writeFileSync(zonPath, updated);
-console.log(`build.zig.zon now points .native_sdk at: ${sdkPath}`);
+fs.rmSync(vendorDir, { recursive: true, force: true });
+fs.cpSync(sdkPath, vendorDir, { recursive: true });
+console.log(`vendored @native-sdk/cli (from ${sdkPath}) into ${vendorDir}`);

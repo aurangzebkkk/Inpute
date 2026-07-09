@@ -60,20 +60,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      # npm's default global prefix (e.g. C:\npm\prefix) and the checked-out
-      # repo (D:\a\...) sit on DIFFERENT drives on windows-latest runners.
-      # Windows relative paths cannot cross drive letters, so
-      # scripts/link-native-sdk.js's `path.relative()` call has nothing
-      # valid to return — force the global npm prefix onto the same drive
-      # as the checkout so a real relative path exists at all.
-      - name: Put npm global prefix on the same drive as the checkout
-        shell: pwsh
-        run: |
-          $drive = (Get-Item $env:GITHUB_WORKSPACE).PSDrive.Name
-          $prefix = "$($drive):\npm-global"
-          New-Item -ItemType Directory -Force -Path $prefix | Out-Null
-          npm config set prefix $prefix
-          Add-Content -Path $env:GITHUB_PATH -Value $prefix
       - name: Install native CLI
         run: npm install -g @native-sdk/cli
       # NOTE: if this fails with "failed to check cache ... native-sdk.manifest

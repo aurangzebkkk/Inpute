@@ -3,6 +3,11 @@
     .fingerprint = 0xf7b5151f5a707070,
     .version = "0.1.0",
     .minimum_zig_version = "0.16.0",
-    .dependencies = .{ .native_sdk = .{ .path = "../../../../../usr/local/lib/node_modules/@native-sdk/cli" } },
+    // Fixed and permanent: scripts/link-native-sdk.js vendors a copy of
+    // the installed @native-sdk/cli package into .native-sdk/ (gitignored,
+    // same drive as this file by construction), so this path never needs
+    // to change per machine. Run that script after cloning, or whenever
+    // the error is "no module named 'native_sdk' available".
+    .dependencies = .{ .native_sdk = .{ .path = ".native-sdk" } },
     .paths = .{ "build.zig", "build.zig.zon", "src", "assets", "app.zon" },
 }
