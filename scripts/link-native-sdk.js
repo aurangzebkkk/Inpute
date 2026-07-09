@@ -29,6 +29,18 @@ if (!fs.existsSync(path.join(sdkPath, "src", "root.zig"))) {
 // `native eject` originally wrote — just freshly computed for THIS
 // machine instead of frozen from whichever machine ran eject.
 const relativePath = path.relative(projectDir, sdkPath) || ".";
+if (path.isAbsolute(relativePath)) {
+  // Windows: path.relative() can't cross drive letters (e.g. project on
+  // D:, npm global prefix on C:) and silently returns the absolute path
+  // instead of erroring — this is exactly the bug that broke Windows CI.
+  console.error(
+    `error: ${projectDir} and ${sdkPath} are on different drives, so no ` +
+      `relative path between them exists. Put npm's global prefix on the ` +
+      `same drive as this checkout (npm config set prefix <drive>:\\npm-global) ` +
+      `and re-run "npm install -g @native-sdk/cli".`,
+  );
+  process.exit(1);
+}
 // build.zig.zon is Zig source, not JSON — escape backslashes (Windows
 // paths) and quotes so the result is a valid Zig string literal.
 const escaped = relativePath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');

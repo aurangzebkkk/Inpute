@@ -87,10 +87,14 @@ fn tryXRecord() bool {
         return false;
     }
 
+    // XRecordRange's `device_events` is an `XRecordRange8 { first, last }`
+    // pair, not two flat fields — confirmed against the real libXtst
+    // header (gitlab.freedesktop.org/xorg/lib/libxtst), since guessing
+    // this wrong from memory is silent corruption, not a build error.
     const range = x11.XRecordAllocRange() orelse return false;
     defer x11.XFree(range);
-    range.*.device_events_first = x11.KeyPress;
-    range.*.device_events_last = x11.ButtonRelease;
+    range.*.device_events.first = x11.KeyPress;
+    range.*.device_events.last = x11.ButtonRelease;
 
     var client_spec: x11.XRecordClientSpec = x11.XRecordAllClients;
     var range_list = [_]x11.XRecordRange{range.*};
