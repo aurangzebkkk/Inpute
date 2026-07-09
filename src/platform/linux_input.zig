@@ -92,7 +92,7 @@ fn tryXRecord() bool {
     // header (gitlab.freedesktop.org/xorg/lib/libxtst), since guessing
     // this wrong from memory is silent corruption, not a build error.
     const range = x11.XRecordAllocRange() orelse return false;
-    defer x11.XFree(range);
+    defer _ = x11.XFree(range);
     range.*.device_events.first = x11.KeyPress;
     range.*.device_events.last = x11.ButtonRelease;
 
