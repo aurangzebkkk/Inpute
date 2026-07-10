@@ -4,16 +4,29 @@
 //! parts to libc (`time`/`localtime_r`/`mktime`) instead of hand-rolling
 //! DST/leap-second-adjacent logic.
 const std = @import("std");
+const builtin = @import("builtin");
 const c = @cImport({
     @cInclude("time.h");
 });
+
+/// `localtime_r` is POSIX-only — MSVC's C runtime has no such symbol at
+/// all, only the ISO `localtime` (not thread-safe) and Microsoft's own
+/// `localtime_s`, whose argument order is the REVERSE of `localtime_r`'s
+/// (dest first, source second).
+fn localtimeLocal(t: *const c.time_t, out: *c.struct_tm) void {
+    if (builtin.os.tag == .windows) {
+        _ = c.localtime_s(out, t);
+    } else {
+        _ = c.localtime_r(t, out);
+    }
+}
 
 pub const YMD = struct { year: i32, month: u8, day: u8 };
 
 pub fn today() YMD {
     var t: c.time_t = c.time(null);
     var tm_buf: c.struct_tm = undefined;
-    _ = c.localtime_r(&t, &tm_buf);
+    localtimeLocal(&t, &tm_buf);
     return .{
         .year = @as(i32, @intCast(tm_buf.tm_year)) + 1900,
         .month = @as(u8, @intCast(tm_buf.tm_mon)) + 1,
@@ -53,7 +66,7 @@ pub fn mondayFirstWeekday(year: i32, month: u8, day: u8) u3 {
     tm_buf.tm_hour = 12;
     const t = c.mktime(&tm_buf);
     var normalized: c.struct_tm = undefined;
-    _ = c.localtime_r(&t, &normalized);
+    localtimeLocal(&t, &normalized);
     // tm_wday is 0=Sunday..6=Saturday; rotate to 0=Monday..6=Sunday.
     const sunday_first: i32 = @intCast(normalized.tm_wday);
     return @intCast(@mod(sunday_first + 6, 7));

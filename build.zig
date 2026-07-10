@@ -20,6 +20,14 @@ pub fn build(b: *std.Build) void {
     const os_tag = artifacts.exe.root_module.resolved_target.?.result.os.tag;
     const compiles = [_]*std.Build.Step.Compile{ artifacts.exe, artifacts.tests };
 
+    // date.zig (and every platform/*.zig backend) uses @cImport, which
+    // needs libc on every target. The main `exe` gets it for free on
+    // every platform we've seen (transitively, via the frameworks/libs
+    // above); the separate `tests` binary does not — Linux CI failed
+    // with "undefined symbol: mktime/localtime_r" specifically because
+    // of this, so link it explicitly rather than rely on transitivity.
+    for (compiles) |compile| compile.root_module.link_libc = true;
+
     switch (os_tag) {
         .macos => for (compiles) |compile| {
             compile.root_module.linkFramework("ApplicationServices", .{});
