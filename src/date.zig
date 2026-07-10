@@ -10,12 +10,17 @@ const c = @cImport({
 });
 
 /// `localtime_r` is POSIX-only — MSVC's C runtime has no such symbol at
-/// all, only the ISO `localtime` (not thread-safe) and Microsoft's own
-/// `localtime_s`, whose argument order is the REVERSE of `localtime_r`'s
-/// (dest first, source second).
+/// all. Its replacement, `localtime_s`, LINKS AS NOTHING: Microsoft's own
+/// docs say it's an inline wrapper in the header around `_localtime64_s`
+/// (the actual exported symbol), which is why calling `c.localtime_s`
+/// compiled fine but failed at link time ("undefined symbol:
+/// localtime_s") — translate-c carries over the extern declaration but
+/// not the inline body. Call `_localtime64_s` directly; its argument
+/// order is also the REVERSE of `localtime_r`'s (dest first, source
+/// second), and `time_t` is `__time64_t` on 64-bit Windows by default.
 fn localtimeLocal(t: *const c.time_t, out: *c.struct_tm) void {
     if (builtin.os.tag == .windows) {
-        _ = c.localtime_s(out, t);
+        _ = c._localtime64_s(out, t);
     } else {
         _ = c.localtime_r(t, out);
     }
