@@ -28,9 +28,13 @@ var data_dir: ?[]const u8 = null;
 pub fn dataDir(io: std.Io) ![]const u8 {
     if (data_dir) |dir| return dir;
 
-    const home = io_context.env.get("HOME") orelse return error.MissingHome;
+    // HOME is only actually needed on macOS/Linux (Windows resolves via
+    // LOCALAPPDATA and never touches env.home at all) — leave it
+    // optional here and let app_dirs.resolveOne's per-platform logic
+    // decide what's actually required, rather than failing on every
+    // platform just because a plain Windows session doesn't set HOME.
     const env: app_dirs.Env = .{
-        .home = home,
+        .home = io_context.env.get("HOME"),
         .xdg_data_home = io_context.env.get("XDG_DATA_HOME"),
         .local_app_data = io_context.env.get("LOCALAPPDATA"),
     };

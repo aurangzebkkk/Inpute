@@ -48,6 +48,12 @@ test "storage save/load/loadAll round-trips through real files, skipping corrupt
     var env = std.process.Environ.Map.init(testing.allocator);
     defer env.deinit();
     try env.put("HOME", home);
+    // Windows' app_dirs resolution needs LOCALAPPDATA specifically (no
+    // HOME-based fallback, unlike macOS/Linux) — reuse the same temp dir
+    // since this test only needs *a* writable directory, not real-world
+    // path semantics. Missing this never surfaced until the test suite
+    // actually ran on a Windows machine (error.MissingRequiredEnv).
+    try env.put("LOCALAPPDATA", home);
     io_context.env = &env;
 
     const day_a = storage.DayCounts{ .date = "2026-07-08".*, .keystrokes = 4821, .clicks = 312 };
